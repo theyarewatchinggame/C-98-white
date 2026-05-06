@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en-us">
+<html lang="zh-TW">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -18,11 +19,95 @@
       overflow-x: hidden;
       overflow-y: auto;
     }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>牠們在看｜真相抽選</title>
+
+<style>
+body{
+  margin:0;
+  background:#050505;
+  color:white;
+  font-family:Arial, "Noto Sans TC", sans-serif;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+}
+
+.container{
+  width:90%;
+  max-width:520px;
+  padding:30px;
+}
+
+h1{
+  font-size:32px;
+  margin-bottom:12px;
+}
+
+p{
+  opacity:.75;
+  line-height:1.8;
+}
+
+.slot{
+  margin:35px auto 20px;
+  padding:28px 20px;
+  border:2px solid #fff;
+  border-radius:18px;
+  min-height:110px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:24px;
+  font-weight:bold;
+  line-height:1.5;
+  background:#111;
+  box-shadow:0 0 20px rgba(255,255,255,.15);
+}
+
+button{
+  margin-top:25px;
+  padding:16px 44px;
+  border:none;
+  border-radius:999px;
+  background:white;
+  color:black;
+  font-size:20px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button:active{
+  transform:scale(.96);
+}
+
+button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+
+.status{
+  margin-top:18px;
+  font-size:14px;
+  opacity:.55;
+}
+
+.result-title{
+  margin-top:26px;
+  font-size:18px;
+  opacity:.8;
+}
+</style>
+</head>
 
     body {
       display: flex;
       justify-content: center;
     }
+<body>
 
     #page {
       width: 100%;
@@ -31,6 +116,7 @@
       justify-content: center;
       padding: 32px 0;
     }
+<div class="container">
 
     #unity-container {
       position: relative;
@@ -39,6 +125,7 @@
       background: #000;
       overflow: hidden;
     }
+  <h1>真相周邊抽選</h1>
 
     #unity-canvas {
       width: 100%;
@@ -46,6 +133,10 @@
       display: block;
       background: #000;
     }
+  <p>
+    完成現場付款 NT$280 後，<br>
+    即可進行一次真相抽選。
+  </p>
 
     #unity-loading-bar {
       position: absolute;
@@ -54,6 +145,9 @@
       transform: translate(-50%, -50%);
       z-index: 20;
     }
+  <div class="slot" id="slot">
+    等待配給中...
+  </div>
 
     #unity-warning {
       position: absolute;
@@ -62,6 +156,7 @@
       transform: translateX(-50%);
       z-index: 30;
     }
+  <button id="drawBtn" onclick="startDraw()">開始抽選</button>
 
     /* 🎬 結局影片 */
     #ending-video-overlay {
@@ -76,11 +171,15 @@
       opacity: 0;
       transition: opacity 0.8s ease;
     }
+  <div class="status" id="status">
+    觀察系統待命中...
+  </div>
 
     #ending-video-overlay.visible {
       display: block;
       opacity: 1;
     }
+</div>
 
     #ending-video-frame {
       position: absolute;
@@ -91,6 +190,13 @@
       transform: translate(-50%, -50%);
       border: 0;
     }
+<script>
+const prizes = [
+  "遊戲場景造型立牌｜光之室",
+  "遊戲場景造型立牌｜破殼夢",
+  "遊戲場景造型立牌｜格子籠",
+  "遊戲場景造型立牌｜食槽前的抉擇",
+  "遊戲場景造型立牌｜全員淘汰",
 
     @media (max-width: 768px) {
       #unity-container {
@@ -107,6 +213,9 @@
     }
   </style>
 </head>
+  "卡牌流沙吊飾｜行動卡牌",
+  "卡牌流沙吊飾｜真相卡牌",
+  "卡牌流沙吊飾｜幻覺卡牌",
 
 <body>
   <div id="page">
@@ -128,18 +237,33 @@
       </div>
     </div>
   </div>
+  "角色插圖磁吸燈箱｜斷喙者・喀喀",
+  "角色插圖磁吸燈箱｜編碼觀測者・C-98",
+  "角色插圖磁吸燈箱｜失焦者・No.13",
+  "角色插圖磁吸燈箱｜羽封者・小白",
+  "角色插圖磁吸燈箱｜孵夢者・殼裡裡",
+  "角色插圖磁吸燈箱｜語者・啼鳴零號"
+];
 
   <script>
     const canvas = document.querySelector("#unity-canvas");
     const loadingBar = document.querySelector("#unity-loading-bar");
     const progressBarFull = document.querySelector("#unity-progress-bar-full");
     const warningBanner = document.querySelector("#unity-warning");
+function startDraw(){
+  const slot = document.getElementById("slot");
+  const status = document.getElementById("status");
+  const btn = document.getElementById("drawBtn");
 
     const endingVideoOverlay = document.getElementById("ending-video-overlay");
     const endingVideoFrame = document.getElementById("ending-video-frame");
+  btn.disabled = true;
+  status.innerText = "真相碎片同步中...";
 
     const GOOD_VIDEO_ID = "ibzq-5RsHVk";
     const BAD_VIDEO_ID = "haLkxcfWCwg";
+  let count = 0;
+  const totalRolls = 35;
 
     function unityShowBanner(msg) {
       const div = document.createElement("div");
@@ -147,6 +271,10 @@
       div.style = "background:red; padding:10px;";
       warningBanner.appendChild(div);
     }
+  const rolling = setInterval(() => {
+    const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
+    slot.innerText = randomPrize;
+    count++;
 
     // 🎬 結局影片控制
     function setEndingVideo(videoId) {
@@ -155,6 +283,8 @@
         videoId +
         "?autoplay=1&mute=1&playsinline=1";
     }
+    if(count >= totalRolls){
+      clearInterval(rolling);
 
     function showEndingVideo() {
       endingVideoOverlay.style.display = "block";
@@ -162,6 +292,8 @@
         endingVideoOverlay.classList.add("visible");
       });
     }
+      const finalPrize = prizes[Math.floor(Math.random() * prizes.length)];
+      slot.innerHTML = "你獲得了：<br>" + finalPrize;
 
     function hideEndingVideo() {
       endingVideoOverlay.classList.remove("visible");
@@ -169,7 +301,12 @@
         endingVideoOverlay.style.display = "none";
         endingVideoFrame.src = "";
       }, 800);
-    }
+      status.innerText = "配給結果已確認，請向工作人員領取。";
+      btn.innerText = "抽選完成";
+}
+  }, 80);
+}
+</script>
 
     window.showGoodEndingVideo = function () {
       setEndingVideo(GOOD_VIDEO_ID);
