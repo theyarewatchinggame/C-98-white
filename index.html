@@ -1,131 +1,224 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | room2</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-  </head>
-  <body>
-    <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=1920 height=1080 tabindex="-1"></canvas>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Unity WebGL Player | room2</title>
+  <link rel="shortcut icon" href="TemplateData/favicon.ico">
+  <link rel="stylesheet" href="TemplateData/style.css">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #000;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+    }
+
+    #page {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 32px 0;
+    }
+
+    #unity-container {
+      position: relative;
+      width: min(860px, 82vw);
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+    }
+
+    #unity-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #000;
+    }
+
+    #unity-loading-bar {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+    }
+
+    #unity-warning {
+      position: absolute;
+      left: 50%;
+      top: 20px;
+      transform: translateX(-50%);
+      z-index: 30;
+    }
+
+    /* 🎬 結局影片 */
+    #ending-video-overlay {
+      position: absolute;
+      left: 16%;
+      top: 23%;
+      width: 28%;
+      height: 33%;
+      z-index: 28;
+      overflow: hidden;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+
+    #ending-video-overlay.visible {
+      display: block;
+      opacity: 1;
+    }
+
+    #ending-video-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 150%;
+      height: 100%;
+      transform: translate(-50%, -50%);
+      border: 0;
+    }
+
+    @media (max-width: 768px) {
+      #unity-container {
+        width: 78vw;
+        max-width: 560px;
+      }
+
+      #ending-video-overlay {
+        left: 12%;
+        top: 32%;
+        width: 76%;
+        height: 22%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="page">
+    <div id="unity-container">
+      <canvas id="unity-canvas" width="1920" height="1080"></canvas>
+
       <div id="unity-loading-bar">
         <div id="unity-logo"></div>
         <div id="unity-progress-bar-empty">
           <div id="unity-progress-bar-full"></div>
         </div>
       </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-webgl-logo"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">room2</div>
+
+      <div id="unity-warning"></div>
+
+      <!-- 🎬 結局影片 -->
+      <div id="ending-video-overlay">
+        <iframe id="ending-video-frame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
       </div>
     </div>
-    <script>
+  </div>
 
-      var container = document.querySelector("#unity-container");
-      var canvas = document.querySelector("#unity-canvas");
-      var loadingBar = document.querySelector("#unity-loading-bar");
-      var progressBarFull = document.querySelector("#unity-progress-bar-full");
-      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-      var warningBanner = document.querySelector("#unity-warning");
+  <script>
+    const canvas = document.querySelector("#unity-canvas");
+    const loadingBar = document.querySelector("#unity-loading-bar");
+    const progressBarFull = document.querySelector("#unity-progress-bar-full");
+    const warningBanner = document.querySelector("#unity-warning");
 
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
-      function unityShowBanner(msg, type) {
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
-      }
+    const endingVideoOverlay = document.getElementById("ending-video-overlay");
+    const endingVideoFrame = document.getElementById("ending-video-frame");
 
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/ROOM2 BUILD.loader.js";
-      var config = {
-        dataUrl: buildUrl + "/ROOM2 BUILD.data",
-        frameworkUrl: buildUrl + "/ROOM2 BUILD.framework.js",
-        codeUrl: buildUrl + "/ROOM2 BUILD.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "room2",
-        productVersion: "0.1.0",
-        showBanner: unityShowBanner,
-      };
+    const GOOD_VIDEO_ID = "ibzq-5RsHVk";
+    const BAD_VIDEO_ID = "haLkxcfWCwg";
 
-      // By default, Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
+    function unityShowBanner(msg) {
+      const div = document.createElement("div");
+      div.innerHTML = msg;
+      div.style = "background:red; padding:10px;";
+      warningBanner.appendChild(div);
+    }
 
-      // If you would like all file writes inside Unity Application.persistentDataPath
-      // directory to automatically persist so that the contents are remembered when
-      // the user revisits the site the next time, uncomment the following line:
-      // config.autoSyncPersistentDataPath = true;
-      // This autosyncing is currently not the default behavior to avoid regressing
-      // existing user projects that might rely on the earlier manual
-      // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
-      // expected to change.
+    // 🎬 結局影片控制
+    function setEndingVideo(videoId) {
+      endingVideoFrame.src =
+        "https://www.youtube.com/embed/" +
+        videoId +
+        "?autoplay=1&mute=1&playsinline=1";
+    }
 
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
+    function showEndingVideo() {
+      endingVideoOverlay.style.display = "block";
+      requestAnimationFrame(() => {
+        endingVideoOverlay.classList.add("visible");
+      });
+    }
 
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        container.className = "unity-mobile";
-        canvas.className = "unity-mobile";
+    function hideEndingVideo() {
+      endingVideoOverlay.classList.remove("visible");
+      setTimeout(() => {
+        endingVideoOverlay.style.display = "none";
+        endingVideoFrame.src = "";
+      }, 800);
+    }
 
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
+    window.showGoodEndingVideo = function () {
+      setEndingVideo(GOOD_VIDEO_ID);
+      showEndingVideo();
+    };
 
+    window.showBadEndingVideo = function () {
+      setEndingVideo(BAD_VIDEO_ID);
+      showEndingVideo();
+    };
 
-      } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
+    window.hideEndingVideo = hideEndingVideo;
 
-        canvas.style.width = "1920px";
-        canvas.style.height = "1080px";
-      }
+    // 🔥 Unity 設定（已對齊檔名）
+    const buildUrl = "Build";
+    const loaderUrl = buildUrl + "/ROOM2 BUILD github.loader.js";
 
-      loadingBar.style.display = "block";
+    const config = {
+      dataUrl: buildUrl + "/ROOM2 BUILD github.data.unityweb",
+      frameworkUrl: buildUrl + "/ROOM2 BUILD github.framework.js.unityweb",
+      codeUrl: buildUrl + "/ROOM2 BUILD github.wasm.unityweb",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "DefaultCompany",
+      productName: "room2",
+      productVersion: "0.1.0",
+      showBanner: unityShowBanner,
+    };
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          progressBarFull.style.width = 100 * progress + "%";
-              }).then((unityInstance) => {
-                loadingBar.style.display = "none";
-                fullscreenButton.onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
-              }).catch((message) => {
-                alert(message);
-              });
-            };
+    loadingBar.style.display = "block";
 
-      document.body.appendChild(script);
+    const script = document.createElement("script");
+    script.src = loaderUrl;
 
-    </script>
-  </body>
+    script.onload = () => {
+      createUnityInstance(canvas, config, (progress) => {
+        progressBarFull.style.width = (100 * progress) + "%";
+      }).then(() => {
+        loadingBar.style.display = "none";
+        hideEndingVideo();
+      }).catch((message) => {
+        alert(message);
+      });
+    };
+
+    script.onerror = () => {
+      alert("❌ loader 載入失敗，請確認 Build 檔案名稱完全一致");
+    };
+
+    document.body.appendChild(script);
+  </script>
+</body>
 </html>
